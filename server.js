@@ -4,6 +4,9 @@ import cors from "cors"
 import connectDB from "./config/db.js"
 import authRoutes from "./routes/authRoutes.js"
 import userRoutes from "./routes/userRoutes.js"
+import attendanceRoutes from "./routes/attendanceRoutes.js"
+import holidayRoutes from "./routes/holidayRoutes.js";
+import leaveRoutes from "./routes/leaveRoutes.js";
 
 dotenv.config()
 connectDB();
@@ -14,6 +17,9 @@ app.use(cors())
 app.use(express.json())
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/attendance", attendanceRoutes);
+app.use("/api/holidays", holidayRoutes);
+app.use("/api/leave", leaveRoutes);
 
 app.get("/", (req, res) => {
     res.send("API Running")

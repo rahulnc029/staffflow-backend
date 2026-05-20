@@ -95,6 +95,10 @@ export const getSingleUser = async(req, res) => {
 
 export const updateUser = async (req, res) => {
     try {
+        if(req.body.employeePassword) {
+            const hashedPassword = await bcrypt.hash(req.body.employeePassword, 10);
+            req.body.employeePassword = hashedPassword;
+        }
         const updateUser = await User.findByIdAndUpdate(
             req.params.id,
             req.body,
