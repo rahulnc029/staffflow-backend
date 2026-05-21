@@ -39,7 +39,7 @@ export const addHoliday = async (req, res) => {
 
 export const getHolidays = async (req, res) => {
     try {
-        const holidays = (await Holiday.find()).sort({
+        const holidays = await Holiday.find().sort({
             holidayDate: 1,
         });
 

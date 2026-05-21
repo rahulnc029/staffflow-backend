@@ -218,12 +218,13 @@ export const requestRegularization = async (req, res) => {
         }
 
         // 24 Hours Validation
-        const attendanceDate = new Date(attendance.createdAt);
+        const attendanceDate = new Date(attendance.date);
         const currentDate = new Date();
-        const diffHours = (currentDate - attendanceDate) / (1000 * 60 * 60);
-        if (diffHours > 24) {
+        attendanceDate.setHours(23, 59, 59, 999);
+
+        if (currentDate > attendanceDate) {
             return res.status(400).json({
-                message: "Regularization allowed only within 24 hours",
+                message: "Regularization allowed only on same day",
             });
         }
 
@@ -243,7 +244,7 @@ export const requestRegularization = async (req, res) => {
             });
         }
 
-        if (attendance.regularizationStatus = "Pending") {
+        if (attendance.regularizationStatus === "Pending") {
             return res.status(400).json({
                 message:
                     "Regularization already requested",
