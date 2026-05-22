@@ -4,24 +4,33 @@ import jwt from "jsonwebtoken"
 
 export const loginUser = async (req, res) => {
     try {
-        const {employeeEmail, employeePassword} = req.body;
-        const user = await User.findOne({employeeEmail})
 
-        if(!user) {
+        const { employeeEmail, employeePassword } = req.body;
+
+        // console.log("LOGIN EMAIL:", employeeEmail);
+        // console.log("LOGIN PASSWORD:", employeePassword);
+
+        const user = await User.findOne({ employeeEmail });
+
+        // console.log("DB USER:", user);
+
+        if (!user) {
             return res.status(401).json({
                 message: "Invalid email or password",
-            })
+            });
         }
 
         const isMatch = await bcrypt.compare(
             employeePassword,
             user.employeePassword
-        )
+        );
 
-        if(!isMatch) {
+        // console.log("PASSWORD MATCH:", isMatch);
+
+        if (!isMatch) {
             return res.status(401).json({
                 message: "Invalid email or password",
-            })
+            });
         }
 
         const token = jwt.sign(
@@ -33,20 +42,24 @@ export const loginUser = async (req, res) => {
             {
                 expiresIn: "1d",
             }
-        )
+        );
 
         res.status(200).json({
             token,
             user: {
                 id: user._id,
                 employeeName: user.employeeName,
+                employeeCode: user.employeeCode,
                 employeeEmail: user.employeeEmail,
                 role: user.role,
             }
-        })
+        });
+
     } catch (error) {
+
         res.status(500).json({
             message: error.message,
-        })
+        });
+
     }
 }
