@@ -122,60 +122,74 @@ export const clockIn = async (req, res) => {
 
 // Clock Out
 
-export const clockOut = async (req, res) => {
+export const requestRegularization = async (req, res) => {
     try {
-        const { employeeId } = req.body;
-        const today = new Date().toISOString().split("T")[0];
-        const attendance = await Attendance.findOne({
-            employeeId,
-            date: today,
-        });
+        const {
+            attendanceId,
+            regularizationReason,
+            regularizedCheckIn,
+            regularizedCheckOut,
+        } = req.body;
+
+        const attendance = await Attendance.findById(attendanceId);
+
         if (!attendance) {
             return res.status(404).json({
-                message: "No clock in found"
-            })
+                message: "Attendance not found",
+            });
         }
 
-        if (attendance.checkOutTime) {
+        // VALIDATION
+        if (
+            !regularizedCheckIn ||
+            !regularizedCheckOut ||
+            !regularizationReason
+        ) {
             return res.status(400).json({
-                message: "Already clocked out"
-            })
+                message:
+                    "Check In, Check Out and Reason are required",
+            });
         }
 
-        const logoutDateTime = new Date();
-        attendance.checkOutTime = logoutDateTime.toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-            hour12: true,
-        });
+        // CHECK BEFORE UPDATING
+        if (attendance.regularizationStatus === "Pending") {
+            return res.status(400).json({
+                message: "Regularization already requested",
+            });
+        }
 
-        // Calculate Hours
-        const diffMs = logoutDateTime - attendance.loginTime;
-        const totalMinutes = Math.floor(diffMs / 1000 / 60);
-        // Gross Hours
-        const grossHours = Math.floor(totalMinutes / 60);
-        const grossMinutes = totalMinutes % 60;
-        attendance.grossHours = `${grossHours}h ${grossMinutes}m`;
-        // Effective Hours
-        // const effectiveTotalMinutes = Math.max(totalMinutes - attendance.breakMinutes, 0);
-        // const effectiveHours = Math.floor(effectiveTotalMinutes / 60);
-        // const effectiveMinutes = effectiveTotalMinutes % 60;
-        // attendance.effectiveHours = `${effectiveHours}h ${effectiveMinutes}m`;
+        // 24 HOURS VALIDATION
+        const attendanceDate = new Date(attendance.date);
+        const currentDate = new Date();
 
-        attendance.status = "Present";
+        attendanceDate.setHours(23, 59, 59, 999);
+
+        if (currentDate > attendanceDate) {
+            return res.status(400).json({
+                message:
+                    "Regularization allowed only on same day",
+            });
+        }
+
+        attendance.regularizationStatus = "Pending";
+        attendance.regularizationReason =
+            regularizationReason;
+        attendance.regularizedCheckIn =
+            regularizedCheckIn;
+        attendance.regularizedCheckOut =
+            regularizedCheckOut;
 
         await attendance.save();
 
         res.status(200).json({
-            message: "Clock Out Successful",
-            attendance,
+            message:
+                "Regularization request submitted successfully",
         });
 
     } catch (error) {
         res.status(500).json({
             message: error.message,
-        })
+        });
     }
 };
 
