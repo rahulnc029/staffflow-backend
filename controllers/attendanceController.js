@@ -7,7 +7,9 @@ export const clockIn = async (req, res) => {
     try {
         const { employeeId } = req.body;
 
-        const today = new Date().toISOString().split("T")[0];
+        const today = new Date().toLocaleDateString("en-CA", {
+            timeZone: "Asia/Kolkata",
+        });
 
         // Check Sunday
         const currentDate = new Date();
@@ -92,6 +94,7 @@ export const clockIn = async (req, res) => {
             arrivalTimeText = formatArrivalTime(diffMinutes, "Late");
         }
         const currentTime = currentDateTime.toLocaleTimeString("en-US", {
+            timeZone: "Asia/Kolkata",
             hour: "2-digit",
             minute: "2-digit",
             second: "2-digit",
@@ -133,7 +136,13 @@ export const clockOut = async (req, res) => {
             return res.status(400).json({ message: "Already clocked out" })
         }
         const logoutDateTime = new Date();
-        attendance.checkOutTime = logoutDateTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true, });
+        attendance.checkOutTime = logoutDateTime.toLocaleTimeString("en-US", {
+            timeZone: "Asia/Kolkata",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: true,
+        });
         // Calculate Hours 
         const diffMs = logoutDateTime - attendance.loginTime;
         const totalMinutes = Math.floor(diffMs / 1000 / 60);
