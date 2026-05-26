@@ -54,45 +54,50 @@ export const clockIn = async (req, res) => {
 
         const currentDateTime = new Date();
 
-        // Shift Time -> 9:00 AM
-        const shiftStart = new Date();
-        shiftStart.setHours(9);
-        shiftStart.setMinutes(0);
-        shiftStart.setSeconds(0);
-        const diffMs = currentDateTime - shiftStart;
-        const diffMinutes = Math.floor(diffMs / 1000 / 60);
+        const nowIST = new Date(
+            currentDateTime.toLocaleString("en-us", {
+                timeZone: "Asia/Kolkata",
+            })
+        );
+
+        const currentHour = nowIST.getHours();
+        const currentMinute = nowIST.getMinutes();
+        const totalCurrentMinutes = currentHour * 60 + currentMinute;
+        const shiftStartMinutes = 9 * 60;
+        const diffMinutes = totalCurrentMinutes - shiftStartMinutes;
+
         let arrivalStatus = "";
         let arrivalTimeText = "";
 
-        // Format Function
-        const formatArrivalTime = (minutes, type) => {
+        const formatArrivalTime = (minutes) => {
             const absMinutes = Math.abs(minutes);
-
-            // Less than 1 hour
-            if (absMinutes < 60) {
-                return `${absMinutes} mins ${type}`;
-            }
-
-            // Greater than 1 hour
             const hrs = Math.floor(absMinutes / 60);
             const mins = absMinutes % 60;
 
-            return `${hrs}h ${mins}m ${type}`;
-        }
+            if (hrs === 0) {
+                return `${mins} mins`;
+            }
 
-        // Early
+            return `${hrs}h ${mins}m`;
+        };
+
+        // Before 9:00
         if (diffMinutes < 0) {
             arrivalStatus = "Early";
-            arrivalTimeText = formatArrivalTime(diffMinutes, "Early");
+            arrivalTimeText = formatArrivalTime(diffMinutes);
         }
-        else if (diffMinutes === 0) {
+
+        // 9:00 to 9:05
+        else if (diffMinutes <= 5) {
             arrivalStatus = "On Time";
-            arrivalTimeText = "On Time";
+            arrivalTimeText = "00:00";
         }
+
         else {
             arrivalStatus = "Late";
-            arrivalTimeText = formatArrivalTime(diffMinutes, "Late");
+            arrivalTimeText = formatArrivalTime(diffMinutes);
         }
+
         const currentTime = currentDateTime.toLocaleTimeString("en-US", {
             timeZone: "Asia/Kolkata",
             hour: "2-digit",
@@ -127,7 +132,9 @@ export const clockIn = async (req, res) => {
 export const clockOut = async (req, res) => {
     try {
         const { employeeId } = req.body;
-        const today = new Date().toISOString().split("T")[0];
+        const today = new Date().toLocaleDateString("en-CA", {
+            timeZone: "Asia/Kolkata",
+        });
         const attendance = await Attendance.findOne({ employeeId, date: today, });
         if (!attendance) {
             return res.status(404).json({ message: "No clock in found" })
@@ -150,11 +157,7 @@ export const clockOut = async (req, res) => {
         const grossHours = Math.floor(totalMinutes / 60);
         const grossMinutes = totalMinutes % 60;
         attendance.grossHours = `${grossHours} h ${grossMinutes} m`;
-        // Effective Hours 
-        // const effectiveTotalMinutes = Math.max(totalMinutes - attendance.breakMinutes, 0); 
-        // const effectiveHours = Math.floor(effectiveTotalMinutes / 60); 
-        // const effectiveMinutes = effectiveTotalMinutes % 60; 
-        // attendance.effectiveHours = ${effectiveHours}h ${effectiveMinutes}m; 
+         
         attendance.status = "Present"; await attendance.save();
         res.status(200).json({ message: "Clock Out Successful", attendance, });
     } catch (error) {
